@@ -77,10 +77,11 @@ class WC_Price_Table_Hooks
             10, 2);
         add_filter('woocommerce_get_item_data', array(&$this, 'woocommerce_get_item_data'), 10, 2);
         add_filter('woocommerce_get_item_data', array(&$this, 'woocommerce_get_option_data_item_data'), 15, 2);
+        add_filter('woocommerce_get_item_data', array(&$this, 'woocommerce_get_color_data_item_data'), 20, 2);
         add_filter('woocommerce_add_cart_item', array(&$this, 'woocommerce_add_cart_item'), 50, 2);
         add_action('woocommerce_add_order_item_meta', array(&$this, 'woocommerce_add_order_item_meta'), 10, 2);
         add_action('woocommerce_order_item_meta', array(&$this, 'woocommerce_order_item_meta'), 10, 2);
-       // add_action('woocommerce_before_main_content', array(&$this, 'show_custom_fields'));
+       //add_action('woocommerce_before_main_content', array(&$this, 'show_custom_fields'));
 
     }
 	public function enqueue_scripts(){
@@ -571,7 +572,6 @@ jQuery(document).ready(function($){
 	single_add_to_cart_button = $('.single_add_to_cart_button');
 	add_to_cart_button_container = $('.single_variation_wrap');
 	$('.wpti-product-size').on('{$update_event}', retrieve_price);
-	//$('.wpti-product-size').on('{$update_event}', retrieve_price);
 	
 	
 	$('#select_product_addons').on('change', function(){
@@ -590,7 +590,7 @@ jQuery(document).ready(function($){
 
     // copy selected value of product image when color dropdown is selected
     $("select.color_option").change(function(){
-        $("#selected-color").empty();
+	$("#selected-color").empty();
         var value = $(this).find("option:selected").attr("data-id");
         //alert(value);
         value = value.toString();
@@ -600,6 +600,27 @@ jQuery(document).ready(function($){
         var img = $('<img>');
         img.attr('src', img_src);
         $("#selected-color").append(img);
+        
+        var color_price = $(this).find("option:selected").attr('data-color-price'),
+        option_price = $('.addons_table_group_option_total').attr('data-grouptotal'),
+        product_price = $('#addons-wpti-product-price').attr('data-wptiprice'),
+        color_total = '', 
+        all_total = '', 
+        color_percentage = '', 
+        options_total = '',
+        product_with_options_total = '';
+        
+        color_percentage = parseFloat(color_price) / 100;
+        product_with_options_total = parseFloat(option_price) + parseFloat(product_price);
+        color_total = color_percentage * product_with_options_total;
+        
+        all_total = parseFloat(color_total) + parseFloat(product_with_options_total);
+        $(".addons_table_group_color_total .price").text( numeral(color_total).format("$0,0.00") );
+        $('.total_order_total').val(all_total);
+        $('.addons_table_group_final_total .price.amount').text(numeral(all_total).format('$0,0.00'));
+		var name = $(this).find("option:selected").val();
+	    $('.selected_color_meta').val(name);
+        
 
     });
 
@@ -686,13 +707,16 @@ END;
 
         // Start Color ACF
         if ( have_rows('collections', $post->ID ) ):
-            $addons_output .= '<h3><a href="#ftc-acc-1123280537">Choose Color</a></h3><span id="selected-color"></span>';
+            $addons_output .= '<h3><a href="#ftc-acc-1123280537">Choose Color</a></h3>';
+            $addons_output .='<span id="selected-color"><img src="https://placehold.it/75x75"/></span>';
             $addons_output .= '<select name="color_option" class="color_option">';
             $addons_output .= '<option value="0" selected="selected">Choose Color</option>';
+            $index = 1;
             while ( have_rows('collections', $post->ID )) : the_row();
                 $colors = get_sub_field('colors');
                 foreach( $colors as $color ):
-                    $addons_output .= '<option data-color-price="'.get_field('price', $color).'" data-id="'.$color.'" data-price="'.get_field('price', $color).'" value="'.get_the_title( $color ).'">'.get_the_title( $color ).'</option>';
+                    $addons_output .= '<option data-color-index="'.$index.'" data-color-price="'.get_field('price', $color).'" data-id="'.$color.'" data-price="'.get_field('price', $color).'" value="'.get_the_title( $color ).'">'.get_the_title( $color ).'</option>';
+                $index++;
                 endforeach;
                 //$addons_output .= '<option value="'.the_sub_field("collection_title").'">'.the_sub_field("collection_title").'</option>';
             endwhile;
@@ -707,6 +731,8 @@ END;
         $addons_output .= '<td><div class="addons_table_group_product_price_total"><span id="addons-wpti-product-price" class="price amount ">$0.00</span></div>';
         $addons_output .= '<input type="hidden" class="matrix_price_total" name="'.$matrix_price_name.'" value=""/></td></tr>';
         $addons_output .= '<tr class="addons_table_tr_additional_options"><td>Additional options total:</td><td><div class="addons_table_group_option_total"><span class="price amount">$0.00</span></div><input type="hidden" class="option_sel_index" name="option_sel_index" value=""/></td></tr>';
+        $addons_output .= '<tr class="addons_table_tr_color_total"><td>Color total:</td><td><div class="addons_table_group_color_total"><span class="price">$0.00</span></div><input type="hidden" class="color_sel_index" name="option_sel_index" value=""/></td></tr>';
+
         $addons_output .= '<tr class="addons_table_tr_order_totals"><td>Order total:</td><td><div class="addons_table_group_final_total" data-grouptotal="0"><span class="price amount">$0.00</span></div>';
         $addons_output .= '<input type="hidden" class="total_order_total" name="'.$product_total_name.'" value=""/></td></tr>';
         $addons_output .= '</tbody></table>';
@@ -739,7 +765,7 @@ END;
 	            'product_total' => $_REQUEST[self::PRODUCT_TOTAL] ? $_REQUEST[self::PRODUCT_TOTAL]: 0,
 	            'matrix_price' => $_REQUEST[self::MATRIX_PRICE] ? $_REQUEST[self::MATRIX_PRICE]: 0,
                 'selected_option_meta' => $_REQUEST['selected_option_meta'] ? $_REQUEST['selected_option_meta'] : '',
-
+	            'selected_color_meta' => $_REQUEST['selected_color_meta'] ? $_REQUEST['selected_color_meta'] : '',
             );
         }
         return $cart_item;
@@ -838,12 +864,23 @@ END;
         }
         return $item_data;
     }
+	public function woocommerce_get_color_data_item_data($item_data, $cart_item){
+		if ($this->use_price_table($cart_item['product_id'])) {
+			$item_data[] = array(
+				'name'  => 'Color',
+				'value'  => $cart_item[self::WPTI_KEY]['selected_color_meta'],
+			);
+
+		}
+		return $item_data;
+	}
 
     public function woocommerce_order_item_meta($item_meta, $cart_item)
     {
         if ($this->use_price_table($cart_item['product_id'])) {
             $item_meta->add($this->get_size_label(), $this->get_size_string($cart_item));
             $item_meta->add('Option', $cart_item[self::WPTI_KEY]['selected_option_meta'].' - $'.number_format($cart_item[self::WPTI_KEY][self::OPTION_TOTAL],2));
+            $item_meta->add('Color', $cart_item[self::WPTI_KEY]['selected_color_meta']);
         }
     }
 
@@ -851,6 +888,7 @@ END;
         if ($this->use_price_table($values['product_id'])) {
             woocommerce_add_order_item_meta($item_id, $this->get_size_label(), $this->get_size_string($values));
             wc_add_order_item_meta( $item_id, 'Option', $values[self::WPTI_KEY]['selected_option_meta'] . ' - $' . number_format($values[self::WPTI_KEY][self::OPTION_TOTAL],2), false );
+            wc_add_order_item_meta( $item_id, 'Color', $values[self::WPTI_KEY]['selected_color_meta']);
         }
     }
 
