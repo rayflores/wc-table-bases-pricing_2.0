@@ -1,13 +1,5 @@
 <?php
 
-/*
-function get_prices_ajax($prices, $product_id, $width, $height) {		
-	//Get all prices by measurement				
-	$prices = get_prices($width, $height, $product_id);
-	return $prices;
-}
-*/
-
 //Get prices for product and all addons using measurements
 function get_prices($width, $height, $product_id = 0, $options_array) {
 	global $wc_price_table, $wpdb;
