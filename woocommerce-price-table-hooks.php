@@ -383,7 +383,7 @@ function update_price(current_prices, status, jqXHR, undefined) {
 	if (typeof current_prices == 'string') {
 		current_prices = JSON.parse(current_prices);
 	}
-	console.log(current_prices);
+	//console.log(current_prices);
 
 	if (current_prices.product_price) {
 	    price = current_prices.product_price;
@@ -399,20 +399,19 @@ function update_price(current_prices, status, jqXHR, undefined) {
 			var addon_name = maddon.addon_name;
 			var this_addon = $('#select_product_addons option[data-addon-index="' + addon_index + '"]');
 			 if (addon_which !== 'fixed' ){
-    			var temp_text = $(this_addon).text().split('+');
+    			var temp_text = $(this_addon).text().split(' + ');
     		    addon_price = current_prices.product_price * (maddon.addon_price/100);
 				addon_price = parseFloat((Math.round(addon_price*100)/100).toFixed(2))
 				$(this_addon).attr('data-addon-new-price', addon_price);
 				$(this_addon).text(temp_text[0] + ' + ' + numeral(addon_price).format('$0,0.00'));
 				$(this_addon).val(addon_price);
-				/*$('.addons_table_group_option_total').attr('data-grouptotal', addon_price);
-				$('.addons_table_group_option_total .price.amount').html(numeral(addon_price).format('$0,0.00'));*/
+
 			 } else {
-				var temp_text = $(this_addon).text().split('+');
+				var temp_text = $(this_addon).text().split(' + ');
 				if (addon_price > 0) {
 				    addon_price = parseFloat((Math.round(addon_price*100)/100).toFixed(4));
                     $(this_addon).attr('data-addon-new-price', addon_price);
-                    $(this_addon).text(temp_text[0] + numeral(addon_price).format('$0,0.00'));
+                    $(this_addon).text(temp_text[0] + ' + ' + numeral(addon_price).format('$0,0.00'));
                     $(this_addon).val(addon_price);
 			    }   else {
 				    addon_price = addon_price*100;
@@ -503,19 +502,13 @@ function update_price(current_prices, status, jqXHR, undefined) {
 	$("#addons-wpti-product-price").attr('data-wptiprice', numeral(product_price).format('0.00'));
 	$("#addons").attr('data-wptiprice', numeral(dataprice).format('0.00') );
 	$('.matrix_price_total').val(numeral(dataprice).format('0.00'));
-	
-	
-	
-	
-	
-	
+
 	$( ".addons_table_tr_order_totals span.price" ).html( numeral(dataprice).format('$0,0.00') );
 	$('.total_order_total').val(dataprice);
-	
-	
-	
+
 	if (current_prices.product_price) { 
-        $('#select_product_addons').prop('disabled', false);	
+        $('#select_product_addons').prop('disabled', false);
+        $("select.color_option").prop('disabled', false);		
 		add_to_cart_button_container.show();
 		single_add_to_cart_button.prop('disabled', false);
 	}
@@ -523,6 +516,7 @@ function update_price(current_prices, status, jqXHR, undefined) {
 		add_to_cart_button_container.hide();
 		single_add_to_cart_button.prop('disabled', true);
 		$('#select_product_addons').prop('disabled', true);
+		$("select.color_option").prop('disabled', true);
 	}
 	
 }
@@ -552,23 +546,29 @@ function update_price_with_options(current_all_prices, status, jqXHR, undefined)
 	product_total = numeral(current_all_prices.product_total).format('$0,0.00');
 	$('.addons_table_group_final_total .price.amount').html(product_total);
 	$('.total_order_total').val(current_all_prices.product_total);
-	console.log(current_all_prices);
+	//console.log(current_all_prices);
 	$('.option_sel_index').val(current_all_prices.options_sel_index);
-	var temp_text = $('#select_product_addons option[data-addon-index="' + current_all_prices.options_sel_index + '"]').text().split('+');
+	var temp_text = $('#select_product_addons option[data-addon-index="' + current_all_prices.options_sel_index + '"]').text().split(' + ');
 	option_name = temp_text[0];
 	$('.selected_option_meta').val(option_name);
+	$('select.color_option').prop('disabled', false);
 }
-function retrieve_options_price(e){
+function retrieve_options_price(e){ 
     var $ = jQuery,
 		option_price = $('#select_product_addons').find(':selected').data('addon-new-price'),
 		option_sel_index = $('#select_product_addons').find(':selected').data('addon-index'),
-		matrix_price = $('#addons').data('wptiprice');
+		matrix_price = $('#addons-wpti-product-price').attr('data-wptiprice'),
 		options = {option_sel_index: option_sel_index, option_price: option_price, matrix_price: matrix_price, action: 'wpti-options-calculation', product_id: {$post->ID}};
+		console.log(matrix_price);
 	    $.get('{$site_url}/wp-admin/admin-ajax.php', options, update_price_with_options);
 }
 
 jQuery(document).ready(function($){
-	$('#select_product_addons').prop('disabled','disabled');
+	if (  $('#select_product_addons').length ) {
+		$('#select_product_addons').prop('disabled','disabled');
+	}
+	$("select.color_option").prop('disabled','disabled');
+	
 	single_add_to_cart_button = $('.single_add_to_cart_button');
 	add_to_cart_button_container = $('.single_variation_wrap');
 	$('.wpti-product-size').on('{$update_event}', retrieve_price);
@@ -610,11 +610,17 @@ jQuery(document).ready(function($){
         options_total = '',
         product_with_options_total = '';
         
+        console.log(option_price);
         color_percentage = parseFloat(color_price) / 100;
-        product_with_options_total = parseFloat(option_price) + parseFloat(product_price);
-        color_total = color_percentage * product_with_options_total;
-        
-        all_total = parseFloat(color_total) + parseFloat(product_with_options_total);
+        if(typeof option_price != 'undefined') {
+	        product_with_options_total = parseFloat(option_price) + parseFloat(product_price);
+	        color_total = color_percentage * product_with_options_total;
+	        all_total = parseFloat(color_total) + parseFloat(product_with_options_total);
+        } else {
+            product_with_options_total = parseFloat(product_price);
+	        color_total = color_percentage * product_with_options_total;
+	        all_total = parseFloat(color_total) + parseFloat(product_with_options_total);
+        }
         $(".addons_table_group_color_total .price").text( numeral(color_total).format("$0,0.00") );
         $('.total_order_total').val(all_total);
         $('.addons_table_group_final_total .price.amount').text(numeral(all_total).format('$0,0.00'));
@@ -631,34 +637,11 @@ jQuery(document).ready(function($){
         var img = $(this).clone();
         $("#selected-color").append(img);
         $("select.color_option").focus();
+        $('select.color_option').trigger('change');
     });
 
 	
-	/*var selected_option = 0;
-	var wptiprice = 0;
-	var total_price = 0;*/
-	/*$(document).on('change','#select_product_addons, .wpti-product-size', function(){
 
-		/*wptiprice = parseFloat($("#addons").attr('data-wptiprice'));
-		wptiprice = parseFloat((Math.round(wptiprice*100)/100).toFixed(2));
-		selected_option = $('#select_product_addons option:selected').data('addon-new-price');
-		selected_option = parseFloat((Math.round(selected_option*100)/100).toFixed(2));
-		
-		
-		total_price = wptiprice + selected_option;
-		total_price = parseFloat((Math.round(total_price*100)/100).toFixed(2));
-		
-		
-		var selected_html = '<span class="woocommerce-Price-currencySymbol">$</span>';
-		$(".addons_table_group_option_total .price .amount").html('<span class="woocommerce-Price-currencySymbol">$</span>' + selected_option);
-		 
-		 $( ".addons_table_tr_order_totals span.price" ).html('$' + total_price.toFixed(2));
-		 
-	}); */
-	// var wpti_matrix_price = $('#addons-wpti-product-price').data('wptiprice');
-	
-
-	// console.log(wpti_matrix_price);
 });
 </script>
 END;
@@ -681,12 +664,12 @@ END;
         $y_metric = get_option(self::Y_METRIC_KEY, self::DEFAULT_Y_METRIC);
         $currency = get_woocommerce_currency();
         $stock = ($product->is_in_stock() ? 'InStock' : 'OutOfStock');
-
-        $title = get_field('addon_title');
-        $addons_output = '<div id="addons">';
-        $addons_output .= '<h3>'.$title.'</h3>';
+	    $title = get_field('addon_title');
+	    $addons_output = '<div id="addons">';
 
         if (have_rows('addon', $post->ID)):
+
+	        $addons_output .= '<h3>'.$title.'</h3>';
             $addons_output .= '<select id="select_product_addons" name="'.$option_total_name.'">';
             $addons_output .= '<option value="0" selected="selected">Choose Option</option>';
             // loop through rows (parent repeater)
@@ -698,7 +681,7 @@ END;
                 $percentage = get_sub_field('addon_fixed_percentage');
                 $addon_price = $which != 'fixed' ? $percentage : $fixed;
                 $plus = (int)$addon_price > 0 ? ' + ' : '';
-                $addons_output .= '<option data-addon-index="'.$index.'" data-addon-price="'.$addon_price.'" data-addon-type="'.$which.'" value="">'.$name.$plus.'</option>';
+                $addons_output .= '<option data-addon-index="'.$index.'" data-addon-price="'.$addon_price.'" data-addon-type="'.$which.'" value="">'.$name.' + </option>';
 
             endwhile; // end of the loop.
             $addons_output .= '</select>';
@@ -710,7 +693,7 @@ END;
             $addons_output .= '<h3><a href="#ftc-acc-1123280537">Choose Color</a></h3>';
             $addons_output .='<span id="selected-color"><img src="https://placehold.it/75x75"/></span>';
             $addons_output .= '<select name="color_option" class="color_option">';
-            $addons_output .= '<option value="0" selected="selected">Choose Color</option>';
+            $addons_output .= '<option value="0" data-color-price="0" data-price="0" data-id="0" selected="selected">Choose Color</option>';
             $index = 1;
             while ( have_rows('collections', $post->ID )) : the_row();
                 $colors = get_sub_field('colors');
