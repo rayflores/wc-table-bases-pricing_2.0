@@ -669,7 +669,7 @@ END;
 
         if (have_rows('addon', $post->ID)):
 
-	        $addons_output .= '<h3>'.$title.'</h3>';
+	        $addons_output .= '<h3>'.$title.'</h3><p>Please choose size before selecting options</p>';
             $addons_output .= '<select id="select_product_addons" name="'.$option_total_name.'">';
             $addons_output .= '<option value="0" selected="selected">Choose Option</option>';
             // loop through rows (parent repeater)
@@ -690,7 +690,7 @@ END;
 
         // Start Color ACF
         if ( have_rows('collections', $post->ID ) ):
-            $addons_output .= '<h3><a href="#ftc-acc-1123280537">Choose Color</a></h3>';
+            $addons_output .= '<h3><a href="#ftc-acc-1123280537">Choose Color</a></h3><p>Please choose size before selecting color</p>';
             $addons_output .='<span id="selected-color"><img src="https://placehold.it/75x75"/></span>';
             $addons_output .= '<select name="color_option" class="color_option">';
             $addons_output .= '<option value="0" data-color-price="0" data-price="0" data-id="0" selected="selected">Choose Color</option>';
@@ -740,10 +740,14 @@ END;
 
     public function woocommerce_add_cart_item_data($cart_item = array(), $product_id = 0, $variation_id = 0)
     {
+		
+		
         if ($this->use_price_table($product_id) || $this->use_price_table($variation_id)) {
             $cart_item[self::WPTI_KEY] = array(
                 'x' => array_key_exists(self::X_KEY, $_REQUEST) ? $_REQUEST[self::X_KEY] : 0.01,
                 'y' => array_key_exists(self::Y_KEY, $_REQUEST) ? $_REQUEST[self::Y_KEY] : 0.01,
+				'width_fraction' => $_REQUEST['WidthFraction'] ? $_REQUEST['WidthFraction'] : 0,
+				'height_fraction' => $_REQUEST['HeightFraction'] ? $_REQUEST['HeightFraction'] : 0,
 	            'option_total' =>  $_REQUEST[self::OPTION_TOTAL] ? $_REQUEST[self::OPTION_TOTAL] : 0,
 	            'product_total' => $_REQUEST[self::PRODUCT_TOTAL] ? $_REQUEST[self::PRODUCT_TOTAL]: 0,
 	            'matrix_price' => $_REQUEST[self::MATRIX_PRICE] ? $_REQUEST[self::MATRIX_PRICE]: 0,
@@ -798,10 +802,44 @@ END;
     }
 
     // helper method to retrieve size information in string
-    protected function get_size_string(&$cart_item)
-    {
-        $x_value = number_format($cart_item[self::WPTI_KEY][self::X], 2);
-        $y_value = number_format($cart_item[self::WPTI_KEY][self::Y], 2);
+    protected function get_size_string(&$cart_item) {
+		$cart_item_width_fraction = '';
+	if ($cart_item[self::WPTI_KEY]['width_fraction'] === '1'){
+		$cart_item_width_fraction = '1/8';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '2'){
+		$cart_item_width_fraction = '1/4';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '3'){
+		$cart_item_width_fraction = '3/8';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '4'){
+		$cart_item_width_fraction = '1/2';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '5'){
+		$cart_item_width_fraction = '5/8';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '6'){
+		$cart_item_width_fraction = '3/4';
+	} elseif ($cart_item[self::WPTI_KEY]['width_fraction'] === '7'){
+		$cart_item_width_fraction = '7/8';
+	}
+	
+	$cart_item_height_fraction = '';
+	if ($cart_item[self::WPTI_KEY]['height_fraction'] === '1'){
+		$cart_item_height_fraction = '1/8';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '2'){
+		$cart_item_height_fraction = '1/4';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '3'){
+		$cart_item_height_fraction = '3/8';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '4'){
+		$cart_item_height_fraction = '1/2';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '5'){
+		$cart_item_height_fraction = '5/8';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '6'){
+		$cart_item_height_fraction = '3/4';
+	} elseif ($cart_item[self::WPTI_KEY]['height_fraction'] === '7'){
+		$cart_item_height_fraction = '7/8';
+	}
+		
+		
+        $x_value = $cart_item[self::WPTI_KEY][self::X].' '.$cart_item_width_fraction;
+        $y_value = $cart_item[self::WPTI_KEY][self::Y].' '.$cart_item_height_fraction;
         $x_metric = get_option(self::X_METRIC_KEY, self::DEFAULT_X_METRIC);
         $y_metric = get_option(self::Y_METRIC_KEY, self::DEFAULT_Y_METRIC);
         $string = "{$x_value} {$x_metric}";
